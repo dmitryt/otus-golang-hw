@@ -14,6 +14,7 @@ type List interface {
 	PushBack(v interface{}) *listItem
 	Remove(i *listItem)
 	MoveToFront(i *listItem)
+
 	display()
 }
 
