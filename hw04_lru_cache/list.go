@@ -2,7 +2,6 @@ package hw04_lru_cache //nolint:golint,stylecheck
 
 import (
 	"fmt"
-	"errors"
 )
 
 // List interface
@@ -29,8 +28,6 @@ type list struct {
 	front *listItem
 	back  *listItem
 }
-
-var ItemNotFoundError = errors.New("Item Not Found")
 
 // NewList - create new List
 func NewList() List {
