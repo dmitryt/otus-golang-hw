@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-// List interface
+// List interface.
 type List interface {
 	Len() int
 	Front() *listItem
@@ -29,17 +29,17 @@ type list struct {
 	back  *listItem
 }
 
-// NewList - create new List
+// NewList - create new List.
 func NewList() List {
 	return &list{}
 }
 
-// Len - return length of list
+// Len - return length of list.
 func (l *list) Len() int {
 	return l.len
 }
 
-// Just for debugging purpose
+// Just for debugging purpose.
 func (l *list) display() {
 	fmt.Print("Displaying the list:", l)
 	fmt.Print(" Items:")
@@ -49,17 +49,17 @@ func (l *list) display() {
 	fmt.Println("")
 }
 
-// Front - return first element of list
+// Front - return first element of list.
 func (l *list) Front() *listItem {
 	return l.front
 }
 
-// Back - return last element of list
+// Back - return last element of list.
 func (l *list) Back() *listItem {
 	return l.back
 }
 
-// PushFront - add value to the beginning of the list
+// PushFront - add value to the beginning of the list.
 func (l *list) PushFront(v interface{}) *listItem {
 	item := &listItem{Value: v}
 	// Correct linking for previous front item
@@ -76,7 +76,7 @@ func (l *list) PushFront(v interface{}) *listItem {
 	return item
 }
 
-// PushBack - add value to the end of the list
+// PushBack - add value to the end of the list.
 func (l *list) PushBack(v interface{}) *listItem {
 	item := &listItem{Value: v}
 	// Correct linking for previous back item
@@ -93,7 +93,7 @@ func (l *list) PushBack(v interface{}) *listItem {
 	return item
 }
 
-// Remove - remove item from the list
+// Remove - remove item from the list.
 func (l *list) Remove(item *listItem) {
 	// Remove first item
 	if item.Prev == nil {
@@ -110,7 +110,7 @@ func (l *list) Remove(item *listItem) {
 	l.len--
 }
 
-// MoveToFront - move item at the beginning of the list
+// MoveToFront - move item at the beginning of the list.
 func (l *list) MoveToFront(item *listItem) {
 	// Skip doing anything, if we try to move the first item
 	if item.Prev == nil {
