@@ -9,43 +9,50 @@ var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
 
 type Task func() error
 
-func prepareClosedChannel(cap int) chan int {
-	channel := make(chan int, cap)
-	for i := 0; i < cap; i++ {
-		channel <- 1
-	}
-	close(channel)
-	return channel
+type errorsCounter struct {
+	value int
+	mu sync.Mutex
 }
 
-// Run starts tasks in N goroutines and stops its work when receiving M errors from tasks
+// Run starts tasks in N goroutines and stops its work when receiving M errors from tasks.
 func Run(tasks []Task, n int, m int) error {
-	var result error = nil
 	var wg sync.WaitGroup
 
 	queueCh := make(chan int, n)
-	quitCh := make(chan error)
-	errorCh := prepareClosedChannel(m)
+	quitCh := make(chan int)
+	errorsCnt := errorsCounter{}
 
 	for _, task := range tasks {
 		select {
-		case result = <-quitCh:
+		case <- quitCh:
 			break
 		case queueCh <- 1:
 			wg.Add(1)
-			go func() {
-				result := task()
-				wg.Done()
-				if result != nil {
-					if _, ok := <-errorCh; !ok {
-						quitCh <- ErrErrorsLimitExceeded
+			go func(task Task){
+				defer wg.Done()
+				releaseQueue := true
+				if (task() != nil) {
+					errorsCnt.mu.Lock()
+					errorsCnt.value++
+					if m == errorsCnt.value - 1 {
+						releaseQueue = false
+						close(quitCh)
 					}
+					errorsCnt.mu.Unlock()
 				}
-				<-queueCh
-			}()
+				if releaseQueue {
+					<- queueCh
+				}
+			}(task)
 		}
 	}
-	// Waiting, when all tasks in queue are finished
+
+	// Wait, when all goroutines finish
 	wg.Wait()
-	return result
+
+	if errorsCnt.value > m {
+		return ErrErrorsLimitExceeded
+	}
+
+	return nil
 }
