@@ -11,7 +11,7 @@ type Task func() error
 
 type errorsCounter struct {
 	value int
-	mu sync.Mutex
+	mu    sync.Mutex
 }
 
 // Run starts tasks in N goroutines and stops its work when receiving M errors from tasks.
@@ -24,24 +24,24 @@ func Run(tasks []Task, n int, m int) error {
 
 	for _, task := range tasks {
 		select {
-		case <- quitCh:
+		case <-quitCh:
 			break
 		case queueCh <- 1:
 			wg.Add(1)
-			go func(task Task){
+			go func(task Task) {
 				defer wg.Done()
 				releaseQueue := true
-				if (task() != nil) {
+				if task() != nil {
 					errorsCnt.mu.Lock()
 					errorsCnt.value++
-					if m == errorsCnt.value - 1 {
+					if m == errorsCnt.value-1 {
 						releaseQueue = false
 						close(quitCh)
 					}
 					errorsCnt.mu.Unlock()
 				}
 				if releaseQueue {
-					<- queueCh
+					<-queueCh
 				}
 			}(task)
 		}
