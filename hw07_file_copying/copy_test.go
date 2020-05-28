@@ -59,7 +59,7 @@ func TestValidation(t *testing.T) {
 		setup(outTestDir, os.ModeDir)
 
 		result := Copy(inFilePath, outFilePath, 10000, 0)
-		require.Equal(t, GetError(ErrOffsetExceedsFileSize), result)
+		require.Equal(t, WrapError(ErrOffsetExceedsFileSize), result)
 
 		shutdown(outTestDir)
 	})
@@ -68,7 +68,7 @@ func TestValidation(t *testing.T) {
 		setup(outTestDir, os.ModeDir)
 
 		result := Copy(inTestDir, outFilePath, 0, 0)
-		require.Equal(t, GetError(ErrSourceIsDirectory), result)
+		require.Equal(t, WrapError(ErrSourceIsDirectory), result)
 
 		shutdown(outTestDir)
 	})
@@ -77,7 +77,7 @@ func TestValidation(t *testing.T) {
 		setup(outTestDir, os.ModeDir)
 
 		result := Copy("/dev/random", outFilePath, 0, 0)
-		require.Equal(t, GetError(ErrUnsupportedFile), result)
+		require.Equal(t, WrapError(ErrUnsupportedFile), result)
 
 		shutdown(outTestDir)
 	})
@@ -86,7 +86,7 @@ func TestValidation(t *testing.T) {
 		setup(outTestDir, os.ModeDir)
 
 		result := Copy("/dev/random", outFilePath, 0, 0)
-		require.Equal(t, GetError(ErrUnsupportedFile), result)
+		require.Equal(t, WrapError(ErrUnsupportedFile), result)
 
 		shutdown(outTestDir)
 	})

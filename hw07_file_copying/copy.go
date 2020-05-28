@@ -24,12 +24,7 @@ type File struct {
 
 const KB = 1 << 10
 
-// It's used for testing only.
-func GetError(err error) error {
-	return wrapError(err)
-}
-
-func wrapError(err error) error {
+func WrapError(err error) error {
 	return fmt.Errorf("go-cp: %w", err)
 }
 
@@ -81,11 +76,11 @@ func writeContent(src io.Reader, toPath string, limit int64, onCopy func(int64))
 func Copy(fromPath string, toPath string, offset, limit int64) error {
 	src, err := getSource(fromPath)
 	if err != nil {
-		return wrapError(err)
+		return WrapError(err)
 	}
 	defer src.ref.Close()
 	if offset > src.stat.Size() {
-		return wrapError(ErrOffsetExceedsFileSize)
+		return WrapError(ErrOffsetExceedsFileSize)
 	}
 	if limit == 0 || limit > src.stat.Size() {
 		limit = src.stat.Size()
@@ -93,11 +88,11 @@ func Copy(fromPath string, toPath string, offset, limit int64) error {
 		limit = src.stat.Size() - offset
 	}
 	if _, err := src.ref.Seek(offset, 0); err != nil {
-		return wrapError(err)
+		return WrapError(err)
 	}
 	// Check, whether it's possible to create file in provided location
 	if _, err := os.Create(toPath); err != nil {
-		return wrapError(err)
+		return WrapError(err)
 	}
 	// Init Progress Bar
 	bar := pb.Full.Start64(limit)
@@ -107,7 +102,7 @@ func Copy(fromPath string, toPath string, offset, limit int64) error {
 		time.Sleep(time.Millisecond)
 	}
 	if err = writeContent(src.ref, toPath, limit, onCopy); err != nil {
-		return wrapError(err)
+		return WrapError(err)
 	}
 	return nil
 }
