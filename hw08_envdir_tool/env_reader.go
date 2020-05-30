@@ -1,34 +1,34 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
-	"io"
 	"errors"
 	"fmt"
-	"sync"
-	"path"
+	"io"
 	"io/ioutil"
 	"os"
-	"bufio"
+	"path"
 	"strings"
+	"sync"
 )
 
 type Environment map[string]string
 
 type Data struct {
 	env Environment
-	mx sync.Mutex
+	mx  sync.Mutex
 }
 
 func readFileLine(filePath string) (string, error) {
 	file, err := os.Open(filePath)
-	if (err != nil) {
+	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 	reader := bufio.NewReader(file)
 	line, err := reader.ReadBytes('\n')
-	if (err != nil && !errors.Is(err, io.EOF)) {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return "", err
 	}
 
@@ -54,7 +54,7 @@ func ReadDir(dir string) (Environment, error) {
 			continue
 		}
 		wg.Add(1)
-		go func(fileInfo os.FileInfo){
+		go func(fileInfo os.FileInfo) {
 			var (
 				line string
 				// Nice bug - if I try to use "err" without redeclaring, this variable will be used from
