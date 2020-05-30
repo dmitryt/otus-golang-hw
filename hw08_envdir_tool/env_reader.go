@@ -55,8 +55,13 @@ func ReadDir(dir string) (Environment, error) {
 		}
 		wg.Add(1)
 		go func(fileInfo os.FileInfo){
+			var (
+				line string
+				// Nice bug - if I try to use "err" without redeclaring, this variable will be used from
+				// upper scope and race condition happens
+				err error
+			)
 			defer wg.Done()
-			line := ""
 			fileName := fileInfo.Name()
 			if fileInfo.Size() > 0 {
 				line, err = readFileLine(path.Join(dir, fileName))

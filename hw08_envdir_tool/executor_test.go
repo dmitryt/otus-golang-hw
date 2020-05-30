@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"os"
+	"testing"
 
 	"github.com/kami-zh/go-capturer"
 	"github.com/stretchr/testify/require"

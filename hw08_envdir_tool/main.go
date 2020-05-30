@@ -1,14 +1,17 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"errors"
 )
 
 var (
-	ErrReadDir = errors.New("Cannot read directory")
+	ErrReadDir     = errors.New("cannot read directory")
+	ErrExecCommand = errors.New("the command cannot be executed")
 )
+
+const defaultErrCode = 111
 
 func wrapError(err error) error {
 	return fmt.Errorf("envdir: %w", err)
@@ -19,7 +22,7 @@ func main() {
 	env, err := ReadDir(dirPath)
 	if err != nil {
 		fmt.Println(wrapError(ErrReadDir))
-		os.Exit(111)
+		os.Exit(defaultErrCode)
 	}
 	os.Exit(RunCmd(args, env))
 }
