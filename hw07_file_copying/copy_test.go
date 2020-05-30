@@ -50,66 +50,55 @@ func shutdown(path string) {
 }
 
 func TestValidation(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			shutdown(outTestDir)
-		}
-	}()
 	t.Run("should throw validation error, when offset is greater, than file size", func(t *testing.T) {
 		setup(outTestDir, os.ModeDir)
+		defer shutdown(outTestDir)
 
 		result := Copy(inFilePath, outFilePath, 10000, 0)
 		require.Equal(t, WrapError(ErrOffsetExceedsFileSize), result)
-
-		shutdown(outTestDir)
 	})
 
 	t.Run("should throw validation error, when user tries to copy directory", func(t *testing.T) {
 		setup(outTestDir, os.ModeDir)
+		defer shutdown(outTestDir)
 
 		result := Copy(inTestDir, outFilePath, 0, 0)
 		require.Equal(t, WrapError(ErrSourceIsDirectory), result)
-
-		shutdown(outTestDir)
 	})
 
 	t.Run("should throw validation error, when user tries to copy directory", func(t *testing.T) {
 		setup(outTestDir, os.ModeDir)
+		defer shutdown(outTestDir)
 
 		result := Copy("/dev/random", outFilePath, 0, 0)
 		require.Equal(t, WrapError(ErrUnsupportedFile), result)
-
-		shutdown(outTestDir)
 	})
 
 	t.Run("should throw validation error, when user tries to copy directory", func(t *testing.T) {
 		setup(outTestDir, os.ModeDir)
+		defer shutdown(outTestDir)
 
 		result := Copy("/dev/random", outFilePath, 0, 0)
 		require.Equal(t, WrapError(ErrUnsupportedFile), result)
-
-		shutdown(outTestDir)
 	})
 
 	t.Run("should throw validation error, when user tries to write to directory", func(t *testing.T) {
 		setup(outTestDir, os.ModeDir)
+		defer shutdown(outTestDir)
 
 		var pathError *os.PathError
 		result := Copy(inFilePath, outTestDir, 0, 0)
 		require.True(t, errors.As(result, &pathError))
-
-		shutdown(outTestDir)
 	})
 
 	t.Run("should throw validation error, when user tries to write to readonly directory", func(t *testing.T) {
 		readonlyDir := ".readonlydir"
 		setup(readonlyDir, 0444)
+		defer shutdown(readonlyDir)
 
 		var pathError *os.PathError
 		result := Copy(inFilePath, path.Join(readonlyDir, "some.txt"), 0, 0)
 		require.True(t, errors.As(result, &pathError))
-
-		shutdown(readonlyDir)
 	})
 }
 
@@ -117,44 +106,41 @@ func TestCopy(t *testing.T) {
 	t.Run("should copy all file", func(t *testing.T) {
 		fileContent := "some content"
 		setup(outTestDir, 0755)
+		defer shutdown(outTestDir)
+
 		mkFile(testFilePath, fileContent)
 
 		require.Nil(t, Copy(testFilePath, outFilePath, 0, 0))
 		require.Equal(t, fileContent, readFile(outFilePath))
-
-		shutdown(outTestDir)
 	})
 
 	t.Run("should copy file with offset", func(t *testing.T) {
 		fileContent := "some content"
 		setup(outTestDir, 0755)
+		defer shutdown(outTestDir)
 		mkFile(testFilePath, fileContent)
 
 		require.Nil(t, Copy(testFilePath, outFilePath, 5, 0))
 		require.Equal(t, "content", readFile(outFilePath))
-
-		shutdown(outTestDir)
 	})
 
 	t.Run("should copy file with limit", func(t *testing.T) {
 		fileContent := "some content"
 		setup(outTestDir, 0755)
+		defer shutdown(outTestDir)
 		mkFile(testFilePath, fileContent)
 
 		require.Nil(t, Copy(testFilePath, outFilePath, 0, 5))
 		require.Equal(t, "some ", readFile(outFilePath))
-
-		shutdown(outTestDir)
 	})
 
 	t.Run("should copy file with offset/limit", func(t *testing.T) {
 		fileContent := "some content"
 		setup(outTestDir, 0755)
+		defer shutdown(outTestDir)
 		mkFile(testFilePath, fileContent)
 
 		require.Nil(t, Copy(testFilePath, outFilePath, 2, 5))
 		require.Equal(t, "me co", readFile(outFilePath))
-
-		shutdown(outTestDir)
 	})
 }
