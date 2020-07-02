@@ -1,13 +1,15 @@
 package hw10_program_optimization //nolint:golint,stylecheck
 
 import (
-	"encoding/json"
-	"fmt"
 	"io"
-	"io/ioutil"
-	"regexp"
+	"bufio"
 	"strings"
+	"sync"
+
+	jsoniter "github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type User struct {
 	ID       int
@@ -21,47 +23,45 @@ type User struct {
 
 type DomainStat map[string]int
 
+type safeCounter struct {
+	v   DomainStat
+	mux sync.Mutex
+}
+
+type lightUser struct {
+	Email    string
+}
+
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-	u, err := getUsers(r)
-	if err != nil {
-		return nil, fmt.Errorf("get users error: %s", err)
-	}
-	return countDomains(u, domain)
+	return countDomains(r, domain)
 }
 
-type users [100_000]User
-
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := ioutil.ReadAll(r)
-	if err != nil {
-		return
+func countDomains(r io.Reader, domain string) (DomainStat, error) {
+	var pool = sync.Pool{
+		New: func() interface{} { return new(lightUser) },
 	}
+	cnt := safeCounter{v: make(DomainStat)}
 
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
-		}
-		result[i] = user
+	scanner := bufio.NewScanner(r)
+	var wg sync.WaitGroup
+	for scanner.Scan() {
+		wg.Add(1)
+		go func(content []byte){
+			defer wg.Done()
+			user := pool.Get().(*lightUser)
+			defer pool.Put(user)
+			if err := json.Unmarshal(content, &user); err != nil {
+				return
+			}
+			matched := strings.Contains(user.Email, "."+domain)
+			if matched {
+				domain := strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])
+				cnt.mux.Lock()
+				cnt.v[domain]++
+				cnt.mux.Unlock()
+			}
+		}(append([]byte(nil), scanner.Bytes()...))
 	}
-	return
-}
-
-func countDomains(u users, domain string) (DomainStat, error) {
-	result := make(DomainStat)
-
-	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-		if err != nil {
-			return nil, err
-		}
-
-		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
-		}
-	}
-	return result, nil
+	wg.Wait()
+	return cnt.v, nil
 }
