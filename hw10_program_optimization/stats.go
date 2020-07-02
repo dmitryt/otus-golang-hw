@@ -1,8 +1,8 @@
 package hw10_program_optimization //nolint:golint,stylecheck
 
 import (
-	"io"
 	"bufio"
+	"io"
 	"strings"
 	"sync"
 
@@ -29,7 +29,7 @@ type safeCounter struct {
 }
 
 type lightUser struct {
-	Email    string
+	Email string
 }
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
@@ -46,7 +46,7 @@ func countDomains(r io.Reader, domain string) (DomainStat, error) {
 	var wg sync.WaitGroup
 	for scanner.Scan() {
 		wg.Add(1)
-		go func(content []byte){
+		go func(content []byte) {
 			defer wg.Done()
 			user := pool.Get().(*lightUser)
 			defer pool.Put(user)
