@@ -2,14 +2,11 @@ package hw10_program_optimization //nolint:golint,stylecheck
 
 import (
 	"bufio"
+	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
-	"sync"
-
-	jsoniter "github.com/json-iterator/go"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type User struct {
 	ID       int
@@ -23,11 +20,6 @@ type User struct {
 
 type DomainStat map[string]int
 
-type safeCounter struct {
-	v   DomainStat
-	mux sync.Mutex
-}
-
 type lightUser struct {
 	Email string
 }
@@ -37,31 +29,24 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 }
 
 func countDomains(r io.Reader, domain string) (DomainStat, error) {
-	var pool = sync.Pool{
-		New: func() interface{} { return new(lightUser) },
+	cnt := make(DomainStat)
+	var user *lightUser
+	reader := bufio.NewReader(r)
+	for {
+		line, _, _ := reader.ReadLine()
+		if line == nil {
+			break
+		}
+		if err := json.Unmarshal(line, &user); err != nil {
+			fmt.Println("ERR", err)
+			continue
+		}
+		matched := strings.Contains(user.Email, "."+domain)
+		if matched {
+			domain := strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])
+			cnt[domain]++
+			user.Email = ""
+		}
 	}
-	cnt := safeCounter{v: make(DomainStat)}
-
-	scanner := bufio.NewScanner(r)
-	var wg sync.WaitGroup
-	for scanner.Scan() {
-		wg.Add(1)
-		go func(content []byte) {
-			defer wg.Done()
-			user := pool.Get().(*lightUser)
-			defer pool.Put(user)
-			if err := json.Unmarshal(content, &user); err != nil {
-				return
-			}
-			matched := strings.Contains(user.Email, "."+domain)
-			if matched {
-				domain := strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])
-				cnt.mux.Lock()
-				cnt.v[domain]++
-				cnt.mux.Unlock()
-			}
-		}(append([]byte(nil), scanner.Bytes()...))
-	}
-	wg.Wait()
-	return cnt.v, nil
+	return cnt, nil
 }
