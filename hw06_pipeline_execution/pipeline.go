@@ -11,17 +11,20 @@ type (
 	Bi  = chan I
 )
 
-type Stage func(in In) (out Out)
-type Data struct {
-	mx     sync.Mutex
-	values map[int]I
-}
+type (
+	Stage func(in In) (out Out)
+	Data  struct {
+		mx     sync.Mutex
+		values map[int]I
+	}
+)
 
 func makeChannel(item I) <-chan I {
 	ch := make(Bi)
 	go func() {
 		ch <- item
 	}()
+
 	return ch
 }
 
@@ -35,6 +38,7 @@ func fillResult(d map[int]I, l int) Bi {
 		}
 	}
 	close(result)
+
 	return result
 }
 
@@ -45,6 +49,7 @@ func checkDone(done In) Bi {
 		<-done
 		close(chDone)
 	}()
+
 	return chDone
 }
 
@@ -57,6 +62,7 @@ func execStages(in In, done In, stages ...Stage) Out {
 			return
 		case 1:
 			valueStream <- <-stages[0](in)
+
 			return
 		default:
 			for {
@@ -68,6 +74,7 @@ func execStages(in In, done In, stages ...Stage) Out {
 			}
 		}
 	}()
+
 	return valueStream
 }
 
@@ -89,6 +96,7 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 					d.mx.Lock()
 					d.values[i] = value
 					d.mx.Unlock()
+
 					return
 				}
 			}
@@ -96,5 +104,6 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 		i++
 	}
 	wg.Wait()
+
 	return fillResult(d.values, i)
 }
