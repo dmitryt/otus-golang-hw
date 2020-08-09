@@ -13,7 +13,7 @@ type (
 
 type Stage func(in In) (out Out)
 type Data struct {
-	mx sync.Mutex
+	mx     sync.Mutex
 	values map[int]I
 }
 
@@ -41,15 +41,9 @@ func fillResult(d map[int]I, l int) Bi {
 // Using closed channel to broadcast signal everywhere.
 func checkDone(done In) Bi {
 	chDone := make(Bi)
-	go func(){
-		for {
-			select {
-			case <-done:
-				close(chDone)
-				return
-			default:
-			}
-		}
+	go func() {
+		<-done
+		close(chDone)
 	}()
 	return chDone
 }
@@ -62,14 +56,14 @@ func execStages(in In, done In, stages ...Stage) Out {
 		case 0:
 			return
 		case 1:
-			valueStream <- <- stages[0](in)
+			valueStream <- <-stages[0](in)
 			return
 		default:
 			for {
 				select {
 				case <-done:
 					return
-				case valueStream <- <- execStages(stages[0](in), done, stages[1:]...):
+				case valueStream <- <-execStages(stages[0](in), done, stages[1:]...):
 				}
 			}
 		}
@@ -85,13 +79,13 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 	chDone := checkDone(done)
 	for item := range in {
 		wg.Add(1)
-		go func(item I, i int){
+		go func(item I, i int) {
 			defer wg.Done()
 			for {
 				select {
 				case <-chDone:
 					return
-				case value := <- execStages(makeChannel(item), chDone, stages...):
+				case value := <-execStages(makeChannel(item), chDone, stages...):
 					d.mx.Lock()
 					d.values[i] = value
 					d.mx.Unlock()
