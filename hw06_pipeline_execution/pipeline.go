@@ -1,9 +1,5 @@
 package hw06_pipeline_execution //nolint:golint,stylecheck
 
-import (
-	"sync"
-)
-
 type (
 	I   = interface{}
 	In  = <-chan I
@@ -13,97 +9,45 @@ type (
 
 type (
 	Stage func(in In) (out Out)
-	Data  struct {
-		mx     sync.Mutex
-		values map[int]I
-	}
 )
 
-func makeChannel(item I) <-chan I {
-	ch := make(Bi)
-	go func() {
-		ch <- item
-	}()
-
-	return ch
-}
-
-func fillResult(d map[int]I, l int) Bi {
-	result := make(Bi, l)
-	for i := 0; i < l; i++ {
-		// filter out empty values
-		// they appear, when channel get closed
-		if d[i] != nil {
-			result <- d[i]
-		}
-	}
-	close(result)
-
-	return result
-}
-
-// Using closed channel to broadcast signal everywhere.
-func checkDone(done In) Bi {
-	chDone := make(Bi)
-	go func() {
-		<-done
-		close(chDone)
-	}()
-
-	return chDone
-}
-
-func execStages(in In, done In, stages ...Stage) Out {
+func makeStream(fn func(In) Out, in In, done In) Out {
 	valueStream := make(Bi)
 	go func() {
 		defer close(valueStream)
-		switch len(stages) {
-		case 0:
-			return
-		case 1:
-			valueStream <- <-stages[0](in)
-
-			return
-		default:
-			for {
-				select {
-				case <-done:
-					return
-				case valueStream <- <-execStages(stages[0](in), done, stages[1:]...):
-				}
+		for item := range in {
+			select {
+			case <-done:
+				return
+			default:
+			}
+			select {
+			case <-done:
+				return
+			case valueStream <- item:
 			}
 		}
 	}()
 
-	return valueStream
+	return fn(valueStream)
+}
+
+func worker(stage Stage, in In, done In) Out {
+	return makeStream(stage, in, done)
+}
+
+func reduce(in In, done In, stages ...Stage) Out {
+	if len(stages) == 0 {
+		return in
+	}
+
+	return reduce(worker(stages[0], in, done), done, stages[1:]...)
 }
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	var wg sync.WaitGroup
-	var d Data
-	d.values = make(map[int]I)
-	var i int
-	chDone := checkDone(done)
-	for item := range in {
-		wg.Add(1)
-		go func(item I, i int) {
-			defer wg.Done()
-			for {
-				select {
-				case <-chDone:
-					return
-				case value := <-execStages(makeChannel(item), chDone, stages...):
-					d.mx.Lock()
-					d.values[i] = value
-					d.mx.Unlock()
-
-					return
-				}
-			}
-		}(item, i)
-		i++
+	fn := func(item In) Out {
+		return item
 	}
-	wg.Wait()
 
-	return fillResult(d.values, i)
+	return makeStream(fn, reduce(in, done, stages...), done)
 }
