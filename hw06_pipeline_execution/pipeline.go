@@ -15,16 +15,15 @@ func makeStream(fn func(In) Out, in In, done In) Out {
 	valueStream := make(Bi)
 	go func() {
 		defer close(valueStream)
-		for item := range in {
+		for {
 			select {
 			case <-done:
 				return
-			default:
-			}
-			select {
-			case <-done:
-				return
-			case valueStream <- item:
+			case value := <-in:
+				if value == nil {
+					return
+				}
+				valueStream <- value
 			}
 		}
 	}()
