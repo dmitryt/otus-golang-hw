@@ -19,8 +19,8 @@ func worker(stage Stage, in In, done In) Out {
 			select {
 			case <-done:
 				return
-			case value := <-in:
-				if value == nil {
+			case value, ok := <-in:
+				if !ok {
 					return
 				}
 				valueStream <- value
