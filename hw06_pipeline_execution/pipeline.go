@@ -11,7 +11,7 @@ type (
 	Stage func(in In) (out Out)
 )
 
-func makeStream(fn func(In) Out, in In, done In) Out {
+func worker(stage Stage, in In, done In) Out {
 	valueStream := make(Bi)
 	go func() {
 		defer close(valueStream)
@@ -28,11 +28,7 @@ func makeStream(fn func(In) Out, in In, done In) Out {
 		}
 	}()
 
-	return fn(valueStream)
-}
-
-func worker(stage Stage, in In, done In) Out {
-	return makeStream(stage, in, done)
+	return stage(valueStream)
 }
 
 func reduce(in In, done In, stages ...Stage) Out {
@@ -44,9 +40,5 @@ func reduce(in In, done In, stages ...Stage) Out {
 }
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	fn := func(item In) Out {
-		return item
-	}
-
-	return makeStream(fn, reduce(in, done, stages...), done)
+	return reduce(in, done, stages...)
 }
