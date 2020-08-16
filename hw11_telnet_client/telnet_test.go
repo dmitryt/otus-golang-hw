@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"sync"
@@ -58,6 +59,72 @@ func TestTelnetClient(t *testing.T) {
 			n, err = conn.Write([]byte("world\n"))
 			require.NoError(t, err)
 			require.NotEqual(t, 0, n)
+		}()
+
+		wg.Wait()
+	})
+	t.Run("connect to unavailable host", func(t *testing.T) {
+		l, err := net.Listen("tcp", "127.0.0.1:")
+		require.NoError(t, err)
+		require.NoError(t, l.Close())
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			in := &bytes.Buffer{}
+			out := &bytes.Buffer{}
+
+			timeout, err := time.ParseDuration("10s")
+			require.NoError(t, err)
+
+			client := NewTelnetClient(l.Addr().String(), timeout, ioutil.NopCloser(in), out)
+			require.Error(t, client.Connect())
+		}()
+
+		wg.Wait()
+	})
+	t.Run("send data to closed connection", func(t *testing.T) {
+		l, err := net.Listen("tcp", "127.0.0.1:")
+		require.NoError(t, err)
+		defer func() { require.NoError(t, l.Close()) }()
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+
+			in := &bytes.Buffer{}
+			out := &bytes.Buffer{}
+
+			timeout, err := time.ParseDuration("10s")
+			require.NoError(t, err)
+
+			client := NewTelnetClient(l.Addr().String(), timeout, ioutil.NopCloser(in), out)
+			require.NoError(t, client.Connect())
+			defer func() { require.NoError(t, client.Close()) }()
+
+			in.WriteString("hello\n")
+			err = client.Send()
+			require.NoError(t, err)
+
+			time.Sleep(100 * time.Millisecond)
+
+			in.WriteString("world\n")
+			err = client.Send()
+			require.EqualError(t, err, fmt.Sprintf("%s", ErrConnectionClosed))
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			conn, err := l.Accept()
+			require.NoError(t, err)
+			require.NotNil(t, conn)
+			require.NoError(t, conn.Close())
 		}()
 
 		wg.Wait()
