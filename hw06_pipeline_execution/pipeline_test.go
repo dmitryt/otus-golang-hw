@@ -54,7 +54,7 @@ func TestPipeline(t *testing.T) {
 		}
 		elapsed := time.Since(start)
 
-		require.Equal(t, result, []string{"102", "104", "106", "108", "110"})
+		require.Equal(t, []string{"102", "104", "106", "108", "110"}, result)
 		require.Less(t,
 			int64(elapsed),
 			// ~0.8s for processing 5 values in 4 stages (100ms every) concurrently
@@ -69,7 +69,8 @@ func TestPipeline(t *testing.T) {
 		// Abort after 200ms
 		abortDur := sleepPerStage * 2
 		go func() {
-			done <- <-time.After(abortDur)
+			<-time.After(abortDur)
+			close(done)
 		}()
 
 		go func() {
@@ -85,7 +86,6 @@ func TestPipeline(t *testing.T) {
 			result = append(result, s.(string))
 		}
 		elapsed := time.Since(start)
-
 		require.Len(t, result, 0)
 		require.Less(t, int64(elapsed), int64(abortDur)+int64(fault))
 	})
