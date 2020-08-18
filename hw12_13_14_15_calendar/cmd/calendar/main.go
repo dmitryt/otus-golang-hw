@@ -52,6 +52,4 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err)
 	}
-
-	fmt.Println("Pass")
 }
