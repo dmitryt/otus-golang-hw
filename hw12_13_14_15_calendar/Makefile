@@ -12,6 +12,6 @@ run:
 	make build && ./bin/calendar -config=./configs/calendar.yml
 
 migrate:
-	goose -dir ./migrations postgres "user=db_calendar_user password=db_calendar_pass dbname=db_calendar sslmode=disable" up
+	./scripts/migrations.sh
 
 .PHONY: build
