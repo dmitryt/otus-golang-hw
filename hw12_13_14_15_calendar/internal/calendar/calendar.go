@@ -42,14 +42,14 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func dummyHandler(w http.ResponseWriter, r *http.Request) {
+func (c *Calendar) dummyHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world")
 }
 
 func (c *Calendar) Run(addr string) error {
 	mux := http.NewServeMux()
 
-	mux.Handle("/hello", logMiddleware(http.HandlerFunc(dummyHandler)))
+	mux.Handle("/hello", logMiddleware(http.HandlerFunc(c.dummyHandler)))
 
 	log.Info().Msgf("Listening at %s", addr)
 

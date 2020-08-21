@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/utils"
@@ -28,25 +29,44 @@ func NewMemoryRepo() *MemoryRepo {
 }
 
 // Probably, need to display events only for particular user.
-func (r *MemoryRepo) GetEvents() ([]Event, error) {
+func (r *MemoryRepo) GetDayEvents(date time.Time) ([]Event, error) {
 	r.mx.RLock()
 	defer r.mx.RLock()
 	result := []Event{}
 	for _, v := range r.storage {
-		result = append(result, v)
+		if v.StartDate == date {
+			result = append(result, v)
+		}
 	}
 	return result, nil
 }
 
-func (r *MemoryRepo) GetEvent(id int64) (ev Event, err error) {
+func isDateInRange(date time.Time, startRange time.Time, endRange time.Time) bool {
+	isAfterStart := date.Equal(startRange) || date.After(startRange)
+	isBeforeEnd := date.Equal(endRange) || date.Before(endRange)
+	return isAfterStart && isBeforeEnd
+}
+
+func (r *MemoryRepo) getEventsInRange(startPeriod time.Time, endPeriod time.Time) ([]Event, error) {
 	r.mx.RLock()
 	defer r.mx.RLock()
-	tmp, ok := r.storage[id]
-	if !ok {
-		return Event{}, ErrEventNotFound
+	result := []Event{}
+	for _, v := range r.storage {
+		isStartDateInRange := isDateInRange(v.StartDate, startPeriod, endPeriod)
+		isEndDateInRange := isDateInRange(v.EndDate, startPeriod, endPeriod)
+		if isStartDateInRange || isEndDateInRange {
+			result = append(result, v)
+		}
 	}
-	ev = tmp
-	return
+	return result, nil
+}
+
+func (r *MemoryRepo) GetWeekEvents(date time.Time) ([]Event, error) {
+	return r.getEventsInRange(date, date.AddDate(0, 0, 7))
+}
+
+func (r *MemoryRepo) GetMonthEvents(date time.Time) ([]Event, error) {
+	return r.getEventsInRange(date, date.AddDate(0, 1, 0))
 }
 
 func (r *MemoryRepo) CreateEvent(data Event) (Event, error) {
@@ -61,15 +81,15 @@ func (r *MemoryRepo) CreateEvent(data Event) (Event, error) {
 	return data, nil
 }
 
-func (r *MemoryRepo) UpdateEvent(data Event) (event Event, err error) {
+func (r *MemoryRepo) UpdateEvent(id int64, data Event) (event Event, err error) {
 	r.mx.Lock()
 	defer r.mx.Unlock()
-	event, ok := r.storage[data.ID]
+	event, ok := r.storage[id]
 	if !ok {
 		return Event{}, ErrEventNotFound
 	}
 	err = mergo.Merge(&event, data, mergo.WithOverride)
-	r.storage[data.ID] = event
+	r.storage[id] = event
 	return
 }
 

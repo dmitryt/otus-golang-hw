@@ -17,6 +17,10 @@ var ErrUnSupportedRepoType = errors.New("unsupported repository type")
 
 var cfgPath string
 
+func fatal(err error) {
+	log.Fatal().Err(err).Msg("Application cannot start")
+}
+
 func init() {
 	flag.StringVar(&cfgPath, "config", "", "Calendar config")
 }
@@ -28,28 +32,29 @@ func main() {
 
 	cfg, err := config.Read(cfgPath)
 	if err != nil {
-		log.Fatal().Err(err)
+		fatal(err)
 	}
+	log.Debug().Msgf("Config inited %+v", cfg)
 	err = logger.Init(cfg)
 	if err != nil {
-		log.Fatal().Err(err)
+		fatal(err)
 	}
 	repo := repository.New(cfg.RepoType)
 	if repo == nil {
-		log.Fatal().Err(ErrUnSupportedRepoType)
+		fatal(ErrUnSupportedRepoType)
 	}
 	err = repo.Connect(ctx, cfg)
 	if err != nil {
-		log.Fatal().Err(err)
+		fatal(err)
 	}
 	defer repo.Close()
 
 	app, err := calendar.New(repo)
 	if err != nil {
-		log.Fatal().Err(err)
+		fatal(err)
 	}
 	err = app.Run(fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
 	if err != nil {
-		log.Fatal().Err(err)
+		fatal(err)
 	}
 }

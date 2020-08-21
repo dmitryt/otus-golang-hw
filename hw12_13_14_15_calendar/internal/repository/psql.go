@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	"github.com/jmoiron/sqlx"
@@ -26,8 +27,11 @@ VALUES
 RETURNING id`
 
 var updateQs = `UPDATE events
-	SET title=:title, description=:description, start_date=:start_date, start_time=:start_time, end_date=:end_date, end_time=:end_time, notified_at=:notified_at
-	WHERE id = :id`
+	SET (title, description, start_date, start_time, end_date, end_time, notified_at) = (:title, :description, :start_date, :start_time, :end_date, :end_time, :notified_at)
+	WHERE id = :id
+	RETURNING id`
+
+var deleteQs = `DELETE FROM events where id = $1 RETURNING id`
 
 func getDSN(c *config.Config) string {
 	return fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable", c.DBHost, c.DBPort, c.DBName, c.DBUser, c.DBPass)
@@ -55,67 +59,91 @@ func NewPSQLRepo() *PSQLRepo {
 	return &PSQLRepo{itemsPerQuery: 100}
 }
 
-func (r *PSQLRepo) GetEvents() (result []Event, err error) {
-	err = r.db.Select(&result, "SELECT * FROM events ORDER BY start_date ASC LIMIT $1", r.itemsPerQuery)
+func (r *PSQLRepo) getEventsBetween(startDate time.Time, endDate time.Time) (result []Event, err error) {
+	query := "SELECT * FROM events WHERE start_date >= $1 or end_date <= $2 ORDER BY start_date ASC LIMIT $3"
+	err = r.db.Select(&result, query, startDate, endDate, r.itemsPerQuery)
 	return
 }
 
-func (r *PSQLRepo) GetEvent(id int64) (result Event, err error) {
-	err = r.db.Select(&result, "SELECT * FROM events where id = $1", id)
+func (r *PSQLRepo) getEventByID(id int64) (result Event, err error) {
+	err = r.db.Get(&result, "SELECT * FROM events WHERE id = $1", id)
 	return
+}
+
+func (r *PSQLRepo) GetDayEvents(date time.Time) (result []Event, err error) {
+	query := "SELECT * FROM events WHERE start_date = $1 ORDER BY start_date ASC LIMIT $2"
+	err = r.db.Select(&result, query, date, r.itemsPerQuery)
+	return
+}
+
+func (r *PSQLRepo) GetWeekEvents(date time.Time) (result []Event, err error) {
+	return r.getEventsBetween(date, date.AddDate(0, 0, 7))
+}
+
+func (r *PSQLRepo) GetMonthEvents(date time.Time) (result []Event, err error) {
+	return r.getEventsBetween(date, date.AddDate(0, 1, 0))
 }
 
 func (r *PSQLRepo) DeleteEvent(id int64) (err error) {
-	res, err := r.db.Exec("DELETE FROM events where id = $1", id)
+	result, err := r.db.Exec(deleteQs, id)
 	if err != nil {
 		return fmt.Errorf("%s: %w", ErrEventDelete, err)
 	}
-	count, err := res.RowsAffected()
+	n, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("%s: %w", ErrEventDelete, err)
 	}
-	if count == 0 {
-		err = ErrEventDeleteFailed
+	if n == 0 {
+		err = ErrEventNotFound
 	}
 	return
 }
 
 func (r *PSQLRepo) CreateEvent(data Event) (event Event, err error) {
-	res, err := r.db.NamedQuery(insertQs, data)
+	stmt, err := r.db.PrepareNamed(insertQs)
 	if err != nil {
-		return Event{}, fmt.Errorf("%s: %w", ErrEventCreate, err)
+		err = fmt.Errorf("%s: %w", ErrEventCreate, err)
+		return
 	}
-	if res.Err() != nil {
-		return Event{}, fmt.Errorf("%s: %w", ErrEventCreate, res.Err())
+	row := stmt.QueryRow(data)
+	if err = row.Err(); err != nil {
+		err = fmt.Errorf("%s: %w", ErrEventCreate, err)
+		return
 	}
-	defer res.Rows.Close()
-
-	event = Event{}
-	for res.Rows.Next() {
-		err := res.StructScan(&event)
-		if err != nil {
-			return Event{}, fmt.Errorf("%s: %w", ErrEventCreate, err)
-		}
+	evt := Event{}
+	err = row.StructScan(&evt)
+	if err != nil {
+		err = fmt.Errorf("%s: %w", ErrEventCreate, err)
+		return
 	}
-	return event, nil
+	if evt.ID == 0 {
+		err = ErrEventNotFound
+		return
+	}
+	return r.getEventByID(evt.ID)
 }
 
-func (r *PSQLRepo) UpdateEvent(data Event) (event Event, err error) {
-	res, err := r.db.NamedQuery(updateQs, data)
+func (r *PSQLRepo) UpdateEvent(id int64, data Event) (event Event, err error) {
+	data.ID = id
+	stmt, err := r.db.PrepareNamed(updateQs)
 	if err != nil {
-		return Event{}, fmt.Errorf("%s: %w", ErrEventUpdate, err)
+		err = fmt.Errorf("%s: %w", ErrEventUpdate, err)
+		return
 	}
-	if res.Err() != nil {
-		return Event{}, fmt.Errorf("%s: %w", ErrEventUpdate, res.Err())
+	row := stmt.QueryRow(data)
+	if err = row.Err(); err != nil {
+		err = fmt.Errorf("%s: %w", ErrEventUpdate, err)
+		return
 	}
-	defer res.Rows.Close()
-
-	event = Event{}
-	for res.Rows.Next() {
-		err := res.StructScan(&event)
-		if err != nil {
-			return Event{}, fmt.Errorf("%s: %w", ErrEventUpdate, err)
-		}
+	evt := Event{}
+	err = row.StructScan(&evt)
+	if err != nil {
+		err = fmt.Errorf("%s: %w", ErrEventCreate, err)
+		return
 	}
-	return event, nil
+	if evt.ID == 0 {
+		err = ErrEventNotFound
+		return
+	}
+	return r.getEventByID(evt.ID)
 }
