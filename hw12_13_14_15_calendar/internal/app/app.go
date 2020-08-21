@@ -1,4 +1,4 @@
-package calendar
+package app
 
 import (
 	"fmt"
@@ -9,12 +9,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type Calendar struct {
+type App struct {
 	r repository.Base
 }
 
-func New(r repository.Base) (*Calendar, error) {
-	return &Calendar{r: r}, nil
+func New(r repository.Base) (*App, error) {
+	return &App{r: r}, nil
 }
 
 type ResponseWriter struct {
@@ -42,11 +42,11 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (c *Calendar) dummyHandler(w http.ResponseWriter, r *http.Request) {
+func (c *App) dummyHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world")
 }
 
-func (c *Calendar) Run(addr string) error {
+func (c *App) Run(addr string) error {
 	mux := http.NewServeMux()
 
 	mux.Handle("/hello", logMiddleware(http.HandlerFunc(c.dummyHandler)))
