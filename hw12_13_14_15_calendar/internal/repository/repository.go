@@ -27,9 +27,7 @@ type Event struct {
 	Title       string         `db:"title"`
 	Description sql.NullString `db:"description"`
 	StartDate   time.Time      `db:"start_date"`
-	StartTime   sql.NullTime   `db:"start_time"`
 	EndDate     time.Time      `db:"end_date"`
-	EndTime     sql.NullTime   `db:"end_time"`
 	NotifiedAt  sql.NullTime   `db:"notified_at"`
 	CreatedAt   sql.NullTime   `db:"created_at"`
 	UpdatedAt   sql.NullTime   `db:"updated_at"`

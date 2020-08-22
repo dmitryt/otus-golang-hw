@@ -11,6 +11,7 @@ import (
 
 	// is used for init postgres.
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog/log"
 )
 
 var ErrDBOpen = errors.New("database open error")
@@ -21,13 +22,13 @@ type PSQLRepo struct {
 }
 
 var insertQs = `INSERT INTO events
-(user_id, title, description, start_date, start_time, end_date, end_time, notified_at)
+(user_id, title, description, start_date, end_date, notified_at)
 VALUES
-(:user_id, :title, :description, :start_date, :start_time, :end_date, :end_time, :notified_at)
+(:user_id, :title, :description, :start_date, :end_date, :notified_at)
 RETURNING id`
 
 var updateQs = `UPDATE events
-	SET (title, description, start_date, start_time, end_date, end_time, notified_at) = (:title, :description, :start_date, :start_time, :end_date, :end_time, :notified_at)
+	SET (title, description, start_date, end_date, notified_at) = (:title, :description, :start_date, :end_date, :notified_at)
 	WHERE id = :id
 	RETURNING id`
 
@@ -67,6 +68,9 @@ func (r *PSQLRepo) getEventsBetween(startDate time.Time, endDate time.Time) (res
 
 func (r *PSQLRepo) getEventByID(id int64) (result Event, err error) {
 	err = r.db.Get(&result, "SELECT * FROM events WHERE id = $1", id)
+	if err != nil {
+		log.Debug().Msgf("[DB] getEventByID Err %d, %+v, %s", id, result, err)
+	}
 	return
 }
 

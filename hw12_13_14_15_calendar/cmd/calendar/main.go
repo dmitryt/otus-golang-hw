@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
@@ -35,26 +34,27 @@ func main() {
 		fatal(err)
 	}
 	log.Debug().Msgf("Config inited %+v", cfg)
-	err = logger.Init(cfg)
-	if err != nil {
+
+	if err = logger.Init(cfg); err != nil {
 		fatal(err)
 	}
+
 	repo := repository.New(cfg.RepoType)
 	if repo == nil {
 		fatal(ErrUnSupportedRepoType)
 	}
-	err = repo.Connect(ctx, cfg)
-	if err != nil {
+
+	if err = repo.Connect(ctx, cfg); err != nil {
 		fatal(err)
 	}
 	defer repo.Close()
 
-	app, err := app.New(repo)
+	app, err := app.New(cfg, repo)
 	if err != nil {
 		fatal(err)
 	}
-	err = app.Run(fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
-	if err != nil {
+
+	if err = app.Run(); err != nil {
 		fatal(err)
 	}
 }

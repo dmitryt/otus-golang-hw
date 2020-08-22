@@ -1,3 +1,5 @@
+cdir = $(shell pwd)
+
 build:
 	mkdir -p bin
 	go build -o ./bin ./...
@@ -13,5 +15,8 @@ run:
 
 migrate:
 	./scripts/migrations.sh
+
+generate:
+	protoc -I /usr/local/include -I ${cdir}/service/grpc/schema --go_out=plugins=grpc:${cdir}/service/grpc/server ${cdir}/service/grpc/schema/calendar.proto
 
 .PHONY: build

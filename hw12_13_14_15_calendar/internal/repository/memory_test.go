@@ -31,7 +31,7 @@ func TestMemoryRepo(t *testing.T) {
 		result, err := r.GetDayEvents(startDate1)
 		require.Nil(t, err)
 
-		require.ElementsMatch(t, result, []Event{r.storage[1], r.storage[3]})
+		require.Equal(t, result, []Event{r.storage[1], r.storage[3]})
 	})
 
 	t.Run("get week events", func(t *testing.T) {
