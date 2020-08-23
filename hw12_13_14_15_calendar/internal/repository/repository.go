@@ -23,11 +23,11 @@ type Base interface {
 
 type Event struct {
 	ID          int64          `db:"id"`
-	UserID      int64          `db:"user_id"`
-	Title       string         `db:"title"`
+	UserID      int64          `db:"user_id" validate:"required"`
+	Title       string         `db:"title" validate:"required"`
 	Description sql.NullString `db:"description"`
-	StartDate   time.Time      `db:"start_date"`
-	EndDate     time.Time      `db:"end_date"`
+	StartDate   time.Time      `db:"start_date" validate:"required"`
+	EndDate     time.Time      `db:"end_date" validate:"required,gtfield=StartDate"`
 	NotifiedAt  sql.NullTime   `db:"notified_at"`
 	CreatedAt   sql.NullTime   `db:"created_at"`
 	UpdatedAt   sql.NullTime   `db:"updated_at"`

@@ -14,3 +14,5 @@ dbPass: "test"
 dBItemsPerQuery: 50
 
 grpcAddress: "localhost:50051"
+httpAddress: "localhost:50052"
+httpProxyAddress: "localhost:50053"

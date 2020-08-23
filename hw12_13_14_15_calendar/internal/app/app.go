@@ -19,25 +19,17 @@ func New(c *config.Config, r repository.Base) (*App, error) {
 	return &App{c: c, r: r}, nil
 }
 
-func runService(addr string, stype service.TransportType, r repository.Base) error {
-	s := service.New(stype, r)
-	if s == nil {
-		return ErrUnrecognizedServiceType
-	}
-	return s.Run(addr)
-}
-
 func (app *App) Run() error {
 	errCh := make(chan error)
-
+	s := service.New(app.r)
 	go func() {
 		if app.c.GRPCAddress != "" {
-			errCh <- runService(app.c.GRPCAddress, service.GRPCType, app.r)
+			errCh <- s.Run(app.c.GRPCAddress)
 		}
 	}()
 	go func() {
-		if app.c.HTTPAddress != "" {
-			errCh <- runService(app.c.HTTPAddress, service.HTTPType, app.r)
+		if app.c.HTTPAddress != "" && app.c.GRPCAddress != "" {
+			errCh <- s.HTTPProxy(app.c.GRPCAddress, app.c.HTTPAddress)
 		}
 	}()
 	return <-errCh
