@@ -54,7 +54,16 @@ func main() {
 		fatal(err)
 	}
 
-	if err = app.Run(); err != nil {
-		fatal(err)
+	errCh := make(chan error)
+	doneCh := make(chan bool)
+	go app.Run(&errCh, &doneCh)
+
+	for {
+		select {
+		case <-doneCh:
+			return
+		case err := <-errCh:
+			log.Error().Msgf("%s", err)
+		}
 	}
 }

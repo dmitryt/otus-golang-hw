@@ -6,8 +6,8 @@ import (
 )
 
 type Service interface {
-	Run(string) error
-	HTTPProxy(string, string) error
+	RunHTTP(string, string) error
+	RunGRPC(string) error
 }
 
 func New(r repository.Base) Service {
