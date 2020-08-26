@@ -7,11 +7,12 @@ import (
 
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/utils"
-	"github.com/imdario/mergo"
 )
 
+type MemoryStorage map[int64]Event
+
 type MemoryRepo struct {
-	storage map[int64]Event
+	storage MemoryStorage
 	mx      sync.RWMutex
 }
 
@@ -20,45 +21,48 @@ func (r *MemoryRepo) Connect(ctx context.Context, c *config.Config) error {
 }
 
 func (r *MemoryRepo) Close() error {
-	r.storage = nil
+	r.ClearStorage()
 	return nil
 }
 
+func (r *MemoryRepo) ClearStorage() {
+	r.storage = make(MemoryStorage)
+}
+
+func (r *MemoryRepo) GetStorage() *MemoryStorage {
+	return &r.storage
+}
+
 func NewMemoryRepo() *MemoryRepo {
-	return &MemoryRepo{storage: make(map[int64]Event)}
+	return &MemoryRepo{storage: make(MemoryStorage)}
 }
 
-// Probably, need to display events only for particular user.
-func (r *MemoryRepo) GetDayEvents(date time.Time) ([]Event, error) {
-	r.mx.RLock()
-	defer r.mx.RLock()
-	result := []Event{}
-	for _, v := range r.storage {
-		if v.StartDate == date {
-			result = append(result, v)
-		}
-	}
-	return result, nil
+func isDateAfter(date time.Time, base time.Time) bool {
+	return date.Equal(base) || date.After(base)
 }
 
-func isDateInRange(date time.Time, startRange time.Time, endRange time.Time) bool {
-	isAfterStart := date.Equal(startRange) || date.After(startRange)
-	isBeforeEnd := date.Equal(endRange) || date.Before(endRange)
-	return isAfterStart && isBeforeEnd
+func isDateBefore(date time.Time, base time.Time) bool {
+	return date.Equal(base) || date.Before(base)
 }
 
 func (r *MemoryRepo) getEventsInRange(startPeriod time.Time, endPeriod time.Time) ([]Event, error) {
 	r.mx.RLock()
-	defer r.mx.RLock()
+	defer r.mx.RUnlock()
 	result := []Event{}
 	for _, v := range r.storage {
-		isStartDateInRange := isDateInRange(v.StartDate, startPeriod, endPeriod)
-		isEndDateInRange := isDateInRange(v.EndDate, startPeriod, endPeriod)
-		if isStartDateInRange || isEndDateInRange {
+		isStartPeriodInRange := isDateAfter(startPeriod, v.StartDate) && isDateBefore(startPeriod, v.EndDate)
+		isEndPeriodInRange := isDateAfter(endPeriod, v.StartDate) && isDateBefore(endPeriod, v.EndDate)
+		isPeriodOutRange := isDateAfter(endPeriod, v.EndDate) && isDateBefore(startPeriod, v.StartDate)
+		if isStartPeriodInRange || isEndPeriodInRange || isPeriodOutRange {
 			result = append(result, v)
 		}
 	}
 	return result, nil
+}
+
+// Probably, need to display events only for particular user.
+func (r *MemoryRepo) GetDayEvents(date time.Time) ([]Event, error) {
+	return r.getEventsInRange(date, date.AddDate(0, 0, 1))
 }
 
 func (r *MemoryRepo) GetWeekEvents(date time.Time) ([]Event, error) {
@@ -88,7 +92,7 @@ func (r *MemoryRepo) UpdateEvent(id int64, data Event) (event Event, err error) 
 	if !ok {
 		return Event{}, ErrEventNotFound
 	}
-	err = mergo.Merge(&event, data, mergo.WithOverride)
+	err = MergeEvents(&event, data)
 	r.storage[id] = event
 	return
 }
