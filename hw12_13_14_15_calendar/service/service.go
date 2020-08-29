@@ -10,6 +10,6 @@ type Service interface {
 	RunGRPC(string) error
 }
 
-func New(r repository.Base) Service {
+func New(r repository.CRUD) Service {
 	return grpc.New(r)
 }

@@ -12,12 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rs/zerolog"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/repository"
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/service/server"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/require"
 )
 
 type DataEvent struct {
