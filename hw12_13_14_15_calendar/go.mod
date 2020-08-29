@@ -14,6 +14,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pressly/goose v2.6.0+incompatible
 	github.com/rs/zerolog v1.15.0
+	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/text v0.3.3 // indirect
 	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70

@@ -1,9 +1,6 @@
-host: "localhost"
-port: 8082
-
 logConfig:
   level: "debug"
-  filePath: "calendar.log"
+  filePath: "calendar_sender.log"
 
 dbConfig:
   host: "localhost"
@@ -14,5 +11,11 @@ dbConfig:
   itemsPerQuery: 50
   repoType: "psql"
 
-grpcAddress: "localhost:50051"
-httpAddress: "localhost:50052"
+queueConfig:
+  user: "guest"
+  pass: "guest"
+  host: "localhost"
+  port: 5672
+  queueName: "events"
+  exchangeType: "direct"
+  scanTimeout: 10
