@@ -21,14 +21,14 @@ var (
 )
 
 type Service struct {
-	r repository.Base
+	r repository.CRUD
 }
 
-func New(r repository.Base) *Service {
+func New(r repository.CRUD) *Service {
 	return &Service{r: r}
 }
 
-func processEvents(repo repository.Base, query *QueryEventsRequest) (events []repository.Event, err error) {
+func processEvents(repo repository.CRUD, query *QueryEventsRequest) (events []repository.Event, err error) {
 	startDate := time.Now()
 	ts := query.GetTs()
 	if ts != 0 {

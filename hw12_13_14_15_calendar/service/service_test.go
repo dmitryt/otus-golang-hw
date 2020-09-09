@@ -1,56 +1,59 @@
 package service
 
 import (
-	"time"
 	"encoding/json"
-	"testing"
-	"strconv"
-	"os"
-	"log"
 	"fmt"
 	"io/ioutil"
-	"strings"
+	"log"
 	"net/http"
-	"github.com/rs/zerolog"
-
-	"github.com/stretchr/testify/require"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
 
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/repository"
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/service/server"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/require"
 )
 
 type DataEvent struct {
-	UserID int64
-	Title string
+	UserID    int64
+	Title     string
 	StartDate string
-	EndDate string
+	EndDate   string
 }
 
 type JSONEvent struct {
-	ID string `json:"ID"`
-	UserID string `json:"UserID"`
-	Title string `json:"Title"`
+	ID        string `json:"ID"`
+	UserID    string `json:"UserID"`
+	Title     string `json:"Title"`
 	StartDate string `json:"StartDate"`
-	EndDate string `json:"EndDate"`
+	EndDate   string `json:"EndDate"`
 }
 
 type EventsResponse struct {
 	Events []JSONEvent `json:"events"`
 }
 
-var service Service
-var repo *repository.MemoryRepo
+var (
+	service Service
+	repo    *repository.MemoryRepo
+)
 
-var grpcAddress = "localhost:50051"
-var httpAddress = "localhost:50052"
+var (
+	grpcAddress = "localhost:50051"
+	httpAddress = "localhost:50052"
+)
 
 func createEvent(ID int64, startDate time.Time, endDate time.Time) repository.Event {
 	return repository.Event{
-		ID: ID,
-		UserID: 1,
-		Title: "Test Title",
+		ID:        ID,
+		UserID:    1,
+		Title:     "Test Title",
 		StartDate: startDate,
-		EndDate: endDate,
+		EndDate:   endDate,
 	}
 }
 
@@ -58,11 +61,11 @@ func getEventsFromStorage(ids []int64) (result []JSONEvent) {
 	for _, id := range ids {
 		evt := (*repo.GetStorage())[id]
 		result = append(result, JSONEvent{
-			ID: strconv.Itoa(int(evt.ID)),
-			UserID: strconv.Itoa(int(evt.UserID)),
-			Title: evt.Title,
+			ID:        strconv.Itoa(int(evt.ID)),
+			UserID:    strconv.Itoa(int(evt.UserID)),
+			Title:     evt.Title,
 			StartDate: evt.StartDate.Format(time.RFC3339),
-			EndDate: evt.EndDate.Format(time.RFC3339),
+			EndDate:   evt.EndDate.Format(time.RFC3339),
 		})
 	}
 	return
@@ -84,7 +87,7 @@ func setup() {
 	// turn off logs for easier checking the test errors
 	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 	repo = repository.NewMemoryRepo()
-	service = New(repo);
+	service = New(repo)
 	runServers()
 }
 
@@ -160,17 +163,17 @@ func checkEventsQuery(t *testing.T, queryType server.QueryRangeType, startPeriod
 
 func TestGetDayEvents(t *testing.T) {
 	resetStorage()
-	checkEventsQuery(t, server.QueryRangeType_DAY, getDate(5, time.September).Unix(), []int64{5,6,7,8})
+	checkEventsQuery(t, server.QueryRangeType_DAY, getDate(5, time.September).Unix(), []int64{5, 6, 7, 8})
 }
 
 func TestGetWeekEvents(t *testing.T) {
 	resetStorage()
-	checkEventsQuery(t, server.QueryRangeType_WEEK, getDate(20, time.September).Unix(), []int64{7,8,10})
+	checkEventsQuery(t, server.QueryRangeType_WEEK, getDate(20, time.September).Unix(), []int64{7, 8, 10})
 }
 
 func TestGetMonthEvents(t *testing.T) {
 	resetStorage()
-	checkEventsQuery(t, server.QueryRangeType_MONTH, getDate(1, time.October).Unix(), []int64{7,8,9,10,11})
+	checkEventsQuery(t, server.QueryRangeType_MONTH, getDate(1, time.October).Unix(), []int64{7, 8, 9, 10, 11})
 }
 
 func TestDeleteEvent(t *testing.T) {
@@ -191,10 +194,10 @@ func TestCreateEvent(t *testing.T) {
 	resetStorage()
 
 	event := DataEvent{
-		UserID: 1,
-		Title: "Test Title",
+		UserID:    1,
+		Title:     "Test Title",
 		StartDate: getDate(1, time.August).Format(time.RFC3339),
-		EndDate: getDate(2, time.August).Format(time.RFC3339),
+		EndDate:   getDate(2, time.August).Format(time.RFC3339),
 	}
 
 	converted, err := json.Marshal(event)
@@ -217,8 +220,8 @@ func TestUpdateEvent(t *testing.T) {
 
 	var eventID int64 = 2
 
-	type DataObject struct{Title string}
-	event := struct{
+	type DataObject struct{ Title string }
+	event := struct {
 		Event DataObject `json:"event"`
 	}{DataObject{"Updated Title"}}
 

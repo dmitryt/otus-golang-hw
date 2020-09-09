@@ -10,8 +10,13 @@ test:
 lint:
 	golangci-lint run ./...
 
+launch:
+	./bin/calendar -config=./configs/calendar.yml & \
+	./bin/calendar_scheduler -config=./configs/scheduler.yml & \
+	./bin/calendar_sender -config=./configs/sender.yml
+
 run:
-	make build && ./bin/calendar -config=./configs/calendar.yml
+	make build && make launch
 
 migrate:
 	./scripts/migrations.sh
