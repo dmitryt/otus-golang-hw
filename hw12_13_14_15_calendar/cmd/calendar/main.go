@@ -41,6 +41,15 @@ func main() {
 		fatal(repository.ErrUnSupportedRepoType)
 	}
 
+	if cfg.DBConfig.ApplyMigrations {
+		if err = repo.Init(context.Background(), repository.GetRootSQLDSN(&cfg.DBConfig)); err != nil {
+			fatal(err)
+		}
+	} else {
+		log.Info().Msg("Skip DB init")
+	}
+
+
 	if err = repo.Connect(ctx, repository.GetSQLDSN(&cfg.DBConfig)); err != nil {
 		fatal(err)
 	}

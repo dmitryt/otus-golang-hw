@@ -16,15 +16,11 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN go build -o main .
+RUN go build -o main cmd/calendar/main.go
 RUN chmod +x main
 
 # Build a small image
 FROM scratch
-
-ENV PORT 8082
-ENV CACHE_DIR .cache
-ENV CACHE_SIZE 10
 
 COPY --from=builder /build/main /
 EXPOSE 8082
