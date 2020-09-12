@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"os"
+	"path/filepath"
 
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
@@ -41,14 +43,18 @@ func main() {
 		fatal(repository.ErrUnSupportedRepoType)
 	}
 
-	if cfg.DBConfig.ApplyMigrations {
-		if err = repo.Init(context.Background(), repository.GetRootSQLDSN(&cfg.DBConfig)); err != nil {
+	if cfg.DBConfig.InitOnStart {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			fatal(err)
+		}
+		migrationsDir := filepath.Join(currentDir, cfg.DBConfig.MigrationsDir)
+		if err = repo.Init(context.Background(), repository.GetSQLDSN(&cfg.DBConfig), migrationsDir); err != nil {
 			fatal(err)
 		}
 	} else {
 		log.Info().Msg("Skip DB init")
 	}
-
 
 	if err = repo.Connect(ctx, repository.GetSQLDSN(&cfg.DBConfig)); err != nil {
 		fatal(err)

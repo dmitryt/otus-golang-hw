@@ -21,6 +21,12 @@ run:
 migrate:
 	./scripts/migrations.sh
 
+up:
+	docker-compose -f deployments/docker-compose.yml up -d
+	
+down:
+	docker-compose -f deployments/docker-compose.yml down
+
 generate:
 	protoc \
 	-I /usr/local/include \

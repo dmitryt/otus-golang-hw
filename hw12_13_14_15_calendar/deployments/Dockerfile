@@ -15,15 +15,17 @@ RUN go mod download
 # Copy the code into the container
 COPY . .
 
+ARG MAIN_FILE_PATH
+
 # Build the application
-RUN go build -o main cmd/calendar/main.go
+RUN go build -o main $MAIN_FILE_PATH
 RUN chmod +x main
 
 # Build a small image
 FROM scratch
 
 COPY --from=builder /build/main /
-EXPOSE 8082
+EXPOSE 8081
 
 # Command to run
 ENTRYPOINT ["/main"]
