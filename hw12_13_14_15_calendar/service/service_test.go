@@ -25,8 +25,8 @@ type DataEvent struct {
 }
 
 type JSONEvent struct {
-	ID        int64 `json:"ID"`
-	UserID    int64 `json:"UserID"`
+	ID        int64  `json:"ID"`
+	UserID    int64  `json:"UserID"`
 	Title     string `json:"Title"`
 	StartDate string `json:"StartDate"`
 	EndDate   string `json:"EndDate"`

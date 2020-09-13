@@ -18,9 +18,6 @@ launch:
 run:
 	make build && make launch
 
-migrate:
-	goose -dir ./migrations postgres "user=\${DB_USER} password=\${DB_PASSWORD} dbname=\${DB_NAME} sslmode=disable\" up
-
 up:
 	docker-compose -f deployments/docker-compose.yml up -d
 
@@ -28,9 +25,9 @@ down:
 	docker-compose -f deployments/docker-compose.yml down
 
 integration-tests:
-	docker-compose -f deployments/docker-compose.yml up -d --build
-	ginkgo ./integration-tests
-	docker-compose -f deployments/docker-compose.yml down
+	docker-compose -f deployments/docker-compose.yml -f deployments/docker-compose.test.yml up -d --build && \
+	API_HOST=http://localhost:8888 ginkgo ./integration-tests && \
+	docker-compose -f deployments/docker-compose.yml -f deployments/docker-compose.test.yml down
 
 generate:
 	protoc \
@@ -40,4 +37,4 @@ generate:
 	--grpc-gateway_out=logtostderr=true:${cdir}/service/server \
 	${cdir}/service/schema/calendar.proto
 
-.PHONY: build
+.PHONY: build integration-tests

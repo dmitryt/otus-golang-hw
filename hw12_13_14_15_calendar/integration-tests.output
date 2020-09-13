@@ -1,7 +1,32 @@
-make integration-tests
-docker-compose -f deployments/docker-compose.yml up -d --build
-Creating network "deployments_default" with the default driver
-Building queue
+docker-compose -f deployments/docker-compose.yml up -d --build && \
+	API_HOST=http://localhost:8888 ginkgo ./integration-tests && \
+	docker-compose -f deployments/docker-compose.yml down
+Step 1/8 : FROM golang:1.14-alpine
+ ---> 0223ac8ea40d
+Step 2/8 : RUN apk update
+ ---> Using cache
+ ---> 939d8313abf6
+Step 3/8 : ENV GO111MODULE=on     CGO_ENABLED=0     GOOS=linux
+ ---> Using cache
+ ---> 64eb44d83ba8
+Step 4/8 : WORKDIR /build
+ ---> Using cache
+ ---> 87b7c58f74fe
+Step 5/8 : RUN go get 'github.com/pressly/goose/cmd/goose'
+ ---> Using cache
+ ---> 37c8932f986d
+Step 6/8 : RUN mkdir -p /opt/db
+ ---> Using cache
+ ---> 709d7c2c4467
+Step 7/8 : COPY ./migrations /opt/db/migrations
+ ---> Using cache
+ ---> fce54de0a0d6
+Step 8/8 : ENTRYPOINT /go/bin/goose -v -dir /opt/db/migrations postgres "host=$DB_HOST port=$DB_PORT user=$DB_USER password=$DB_PASSWORD dbname=$DB_NAME sslmode=disable" up
+ ---> Using cache
+ ---> 2a8b144dc191
+
+Successfully built 2a8b144dc191
+Successfully tagged deployments_migrator:latest
 Step 1/3 : FROM rabbitmq:3-management
  ---> 9dd69c24b09f
 Step 2/3 : RUN apt-get update
@@ -13,7 +38,6 @@ Step 3/3 : RUN apt-get install -y netcat
 
 Successfully built 4dedbc3ea806
 Successfully tagged deployments_queue:latest
-Building calendar
 Step 1/14 : FROM golang:1.14-alpine AS builder
  ---> 0223ac8ea40d
 Step 2/14 : RUN apk update
@@ -27,40 +51,39 @@ Step 4/14 : WORKDIR /build
  ---> 87b7c58f74fe
 Step 5/14 : COPY go.mod go.sum ./
  ---> Using cache
- ---> c1abbb8b9dd9
+ ---> 1695e50752d5
 Step 6/14 : RUN go mod download
  ---> Using cache
- ---> 3f692dff82ee
+ ---> f2f881fd4fdb
 Step 7/14 : COPY . .
- ---> 94f1f80f1788
+ ---> e55eb0908cde
 Step 8/14 : ARG MAIN_FILE_PATH
- ---> Running in e27e4dd89ffb
-Removing intermediate container e27e4dd89ffb
- ---> 875c9ee9da2c
+ ---> Running in 9f14e3803cf2
+Removing intermediate container 9f14e3803cf2
+ ---> f930a425e3b3
 Step 9/14 : RUN go build -o main $MAIN_FILE_PATH
- ---> Running in fed8016a31d0
-Removing intermediate container fed8016a31d0
- ---> 435c5b3091cd
+ ---> Running in 55d1350fe5c7
+Removing intermediate container 55d1350fe5c7
+ ---> ebb1e38b5aff
 Step 10/14 : RUN chmod +x main
- ---> Running in ae056acbf512
-Removing intermediate container ae056acbf512
- ---> 097eea964b21
+ ---> Running in dfdba8581174
+Removing intermediate container dfdba8581174
+ ---> 74593cba1344
 
 Step 11/14 : FROM scratch
- --->
+ ---> 
 Step 12/14 : COPY --from=builder /build/main /
  ---> Using cache
- ---> cabe5bf8af8a
+ ---> 2fac9a18f714
 Step 13/14 : EXPOSE 8081
  ---> Using cache
- ---> 2e2083bb4137
+ ---> 9a23c2b2318e
 Step 14/14 : ENTRYPOINT ["/main"]
  ---> Using cache
- ---> e668a9bfbd50
+ ---> a988a0f8f1f9
 
-Successfully built e668a9bfbd50
+Successfully built a988a0f8f1f9
 Successfully tagged deployments_calendar:latest
-Building calendar_scheduler
 Step 1/14 : FROM golang:1.14-alpine AS builder
  ---> 0223ac8ea40d
 Step 2/14 : RUN apk update
@@ -74,40 +97,39 @@ Step 4/14 : WORKDIR /build
  ---> 87b7c58f74fe
 Step 5/14 : COPY go.mod go.sum ./
  ---> Using cache
- ---> c1abbb8b9dd9
+ ---> 1695e50752d5
 Step 6/14 : RUN go mod download
  ---> Using cache
- ---> 3f692dff82ee
+ ---> f2f881fd4fdb
 Step 7/14 : COPY . .
- ---> Using cache
- ---> 94f1f80f1788
+ ---> 2825fe9f9822
 Step 8/14 : ARG MAIN_FILE_PATH
- ---> Using cache
- ---> 875c9ee9da2c
+ ---> Running in 38b5cd118b5a
+Removing intermediate container 38b5cd118b5a
+ ---> 6e195a637345
 Step 9/14 : RUN go build -o main $MAIN_FILE_PATH
- ---> Running in 956bba8a23eb
-Removing intermediate container 956bba8a23eb
- ---> 2d6010b2184a
+ ---> Running in b044cf97ed1a
+Removing intermediate container b044cf97ed1a
+ ---> 2f79776ae929
 Step 10/14 : RUN chmod +x main
- ---> Running in 961ced855ce1
-Removing intermediate container 961ced855ce1
- ---> 21cdf0f9a4a7
+ ---> Running in cb3849850f78
+Removing intermediate container cb3849850f78
+ ---> b9cc19548077
 
 Step 11/14 : FROM scratch
- --->
+ ---> 
 Step 12/14 : COPY --from=builder /build/main /
  ---> Using cache
- ---> 8ba6957317f1
+ ---> e20e97826935
 Step 13/14 : EXPOSE 8081
  ---> Using cache
- ---> 0af9750e0643
+ ---> dcd21bfb36cc
 Step 14/14 : ENTRYPOINT ["/main"]
  ---> Using cache
- ---> 8458b078283d
+ ---> e8c54c1c3744
 
-Successfully built 8458b078283d
+Successfully built e8c54c1c3744
 Successfully tagged deployments_calendar_scheduler:latest
-Building calendar_sender
 Step 1/14 : FROM golang:1.14-alpine AS builder
  ---> 0223ac8ea40d
 Step 2/14 : RUN apk update
@@ -121,74 +143,56 @@ Step 4/14 : WORKDIR /build
  ---> 87b7c58f74fe
 Step 5/14 : COPY go.mod go.sum ./
  ---> Using cache
- ---> c1abbb8b9dd9
+ ---> 1695e50752d5
 Step 6/14 : RUN go mod download
  ---> Using cache
- ---> 3f692dff82ee
+ ---> f2f881fd4fdb
 Step 7/14 : COPY . .
- ---> Using cache
- ---> 94f1f80f1788
+ ---> 0b632b8b2b1d
 Step 8/14 : ARG MAIN_FILE_PATH
- ---> Using cache
- ---> 875c9ee9da2c
+ ---> Running in 6c19e6b41c64
+Removing intermediate container 6c19e6b41c64
+ ---> 38dd545c8936
 Step 9/14 : RUN go build -o main $MAIN_FILE_PATH
- ---> Running in 21bda839be67
-Removing intermediate container 21bda839be67
- ---> 199dab6b8c39
+ ---> Running in a87c83becfca
+Removing intermediate container a87c83becfca
+ ---> 5bdf3d96a4a6
 Step 10/14 : RUN chmod +x main
- ---> Running in 50f5435b65e3
-Removing intermediate container 50f5435b65e3
- ---> ad82e31c73a1
+ ---> Running in cab719bc7494
+Removing intermediate container cab719bc7494
+ ---> f774a1eb2ed1
 
 Step 11/14 : FROM scratch
- --->
+ ---> 
 Step 12/14 : COPY --from=builder /build/main /
  ---> Using cache
- ---> 5bb82c16e623
+ ---> 7006fab2c329
 Step 13/14 : EXPOSE 8081
  ---> Using cache
- ---> e328b0483fe3
+ ---> b64dfa29f5bf
 Step 14/14 : ENTRYPOINT ["/main"]
  ---> Using cache
- ---> e457f8624483
+ ---> 574afba64b53
 
-Successfully built e457f8624483
+Successfully built 574afba64b53
 Successfully tagged deployments_calendar_sender:latest
-Creating deployments_queue_1 ... done
-Creating deployments_db_1    ... done
-Creating deployments_calendar_sender_1    ... done
-Creating deployments_calendar_1           ... done
-Creating deployments_calendar_scheduler_1 ... done
-ginkgo ./tests
 Running Suite: Tests Suite
 ==========================
-Random Seed: 1600023487
-Will run 8 of 8 specs
+Random Seed: [1m1600037016[0m
+Will run [1m8[0m of [1m8[0m specs
 
-• [SLOW TEST:10.019 seconds]
+[32m• [SLOW TEST:10.025 seconds][0m
 Sender
-/Users/gremlin/education/otus/golang/otus-go/otus-golang-hw/hw12_13_14_15_calendar/tests/sender_test.go:12
+[90m/Users/gremlin/education/otus/golang/otus-go/otus-golang-hw/hw12_13_14_15_calendar/integration-tests/sender_test.go:12[0m
   Event
-  /Users/gremlin/education/otus/golang/otus-go/otus-golang-hw/hw12_13_14_15_calendar/tests/sender_test.go:13
+  [90m/Users/gremlin/education/otus/golang/otus-go/otus-golang-hw/hw12_13_14_15_calendar/integration-tests/sender_test.go:13[0m
     should receive event
-    /Users/gremlin/education/otus/golang/otus-go/otus-golang-hw/hw12_13_14_15_calendar/tests/sender_test.go:14
-------------------------------
-•••••••
-Ran 8 of 8 Specs in 10.213 seconds
-SUCCESS! -- 8 Passed | 0 Failed | 0 Pending | 0 Skipped
+    [90m/Users/gremlin/education/otus/golang/otus-go/otus-golang-hw/hw12_13_14_15_calendar/integration-tests/sender_test.go:14[0m
+[90m------------------------------[0m
+[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m
+[1m[32mRan 8 of 8 Specs in 10.184 seconds[0m
+[1m[32mSUCCESS![0m -- [32m[1m8 Passed[0m | [91m[1m0 Failed[0m | [33m[1m0 Pending[0m | [36m[1m0 Skipped[0m
 PASS
 
-Ginkgo ran 1 suite in 11.684557533s
+Ginkgo ran 1 suite in 11.667739329s
 Test Suite Passed
-docker-compose -f deployments/docker-compose.yml down
-Stopping deployments_calendar_scheduler_1 ... done
-Stopping deployments_calendar_1           ... done
-Stopping deployments_calendar_sender_1    ... done
-Stopping deployments_queue_1              ... done
-Stopping deployments_db_1                 ... done
-Removing deployments_calendar_scheduler_1 ... done
-Removing deployments_calendar_1           ... done
-Removing deployments_calendar_sender_1    ... done
-Removing deployments_queue_1              ... done
-Removing deployments_db_1                 ... done
-Removing network deployments_default

@@ -10,11 +10,20 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
+      test: ["CMD", "pg_isready", "-U", "$POSTGRES_USER"]
       interval: 10s
       timeout: 10s
       retries: 3
       start_period: 20s
+  migrator:
+    build:
+      context: ../
+      dockerfile: ./deployments/migrator/Dockerfile
+    env_file:
+      - database.env
+    depends_on:
+      db:
+        condition: service_healthy
   queue:
     build:
       context: ./rabbitmq
