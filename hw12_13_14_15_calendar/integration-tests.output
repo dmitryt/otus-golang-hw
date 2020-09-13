@@ -1,0 +1,194 @@
+make integration-tests
+docker-compose -f deployments/docker-compose.yml up -d --build
+Creating network "deployments_default" with the default driver
+Building queue
+Step 1/3 : FROM rabbitmq:3-management
+ ---> 9dd69c24b09f
+Step 2/3 : RUN apt-get update
+ ---> Using cache
+ ---> 43f3b584ba90
+Step 3/3 : RUN apt-get install -y netcat
+ ---> Using cache
+ ---> 4dedbc3ea806
+
+Successfully built 4dedbc3ea806
+Successfully tagged deployments_queue:latest
+Building calendar
+Step 1/14 : FROM golang:1.14-alpine AS builder
+ ---> 0223ac8ea40d
+Step 2/14 : RUN apk update
+ ---> Using cache
+ ---> 939d8313abf6
+Step 3/14 : ENV GO111MODULE=on     CGO_ENABLED=0     GOOS=linux
+ ---> Using cache
+ ---> 64eb44d83ba8
+Step 4/14 : WORKDIR /build
+ ---> Using cache
+ ---> 87b7c58f74fe
+Step 5/14 : COPY go.mod go.sum ./
+ ---> Using cache
+ ---> c1abbb8b9dd9
+Step 6/14 : RUN go mod download
+ ---> Using cache
+ ---> 3f692dff82ee
+Step 7/14 : COPY . .
+ ---> 94f1f80f1788
+Step 8/14 : ARG MAIN_FILE_PATH
+ ---> Running in e27e4dd89ffb
+Removing intermediate container e27e4dd89ffb
+ ---> 875c9ee9da2c
+Step 9/14 : RUN go build -o main $MAIN_FILE_PATH
+ ---> Running in fed8016a31d0
+Removing intermediate container fed8016a31d0
+ ---> 435c5b3091cd
+Step 10/14 : RUN chmod +x main
+ ---> Running in ae056acbf512
+Removing intermediate container ae056acbf512
+ ---> 097eea964b21
+
+Step 11/14 : FROM scratch
+ --->
+Step 12/14 : COPY --from=builder /build/main /
+ ---> Using cache
+ ---> cabe5bf8af8a
+Step 13/14 : EXPOSE 8081
+ ---> Using cache
+ ---> 2e2083bb4137
+Step 14/14 : ENTRYPOINT ["/main"]
+ ---> Using cache
+ ---> e668a9bfbd50
+
+Successfully built e668a9bfbd50
+Successfully tagged deployments_calendar:latest
+Building calendar_scheduler
+Step 1/14 : FROM golang:1.14-alpine AS builder
+ ---> 0223ac8ea40d
+Step 2/14 : RUN apk update
+ ---> Using cache
+ ---> 939d8313abf6
+Step 3/14 : ENV GO111MODULE=on     CGO_ENABLED=0     GOOS=linux
+ ---> Using cache
+ ---> 64eb44d83ba8
+Step 4/14 : WORKDIR /build
+ ---> Using cache
+ ---> 87b7c58f74fe
+Step 5/14 : COPY go.mod go.sum ./
+ ---> Using cache
+ ---> c1abbb8b9dd9
+Step 6/14 : RUN go mod download
+ ---> Using cache
+ ---> 3f692dff82ee
+Step 7/14 : COPY . .
+ ---> Using cache
+ ---> 94f1f80f1788
+Step 8/14 : ARG MAIN_FILE_PATH
+ ---> Using cache
+ ---> 875c9ee9da2c
+Step 9/14 : RUN go build -o main $MAIN_FILE_PATH
+ ---> Running in 956bba8a23eb
+Removing intermediate container 956bba8a23eb
+ ---> 2d6010b2184a
+Step 10/14 : RUN chmod +x main
+ ---> Running in 961ced855ce1
+Removing intermediate container 961ced855ce1
+ ---> 21cdf0f9a4a7
+
+Step 11/14 : FROM scratch
+ --->
+Step 12/14 : COPY --from=builder /build/main /
+ ---> Using cache
+ ---> 8ba6957317f1
+Step 13/14 : EXPOSE 8081
+ ---> Using cache
+ ---> 0af9750e0643
+Step 14/14 : ENTRYPOINT ["/main"]
+ ---> Using cache
+ ---> 8458b078283d
+
+Successfully built 8458b078283d
+Successfully tagged deployments_calendar_scheduler:latest
+Building calendar_sender
+Step 1/14 : FROM golang:1.14-alpine AS builder
+ ---> 0223ac8ea40d
+Step 2/14 : RUN apk update
+ ---> Using cache
+ ---> 939d8313abf6
+Step 3/14 : ENV GO111MODULE=on     CGO_ENABLED=0     GOOS=linux
+ ---> Using cache
+ ---> 64eb44d83ba8
+Step 4/14 : WORKDIR /build
+ ---> Using cache
+ ---> 87b7c58f74fe
+Step 5/14 : COPY go.mod go.sum ./
+ ---> Using cache
+ ---> c1abbb8b9dd9
+Step 6/14 : RUN go mod download
+ ---> Using cache
+ ---> 3f692dff82ee
+Step 7/14 : COPY . .
+ ---> Using cache
+ ---> 94f1f80f1788
+Step 8/14 : ARG MAIN_FILE_PATH
+ ---> Using cache
+ ---> 875c9ee9da2c
+Step 9/14 : RUN go build -o main $MAIN_FILE_PATH
+ ---> Running in 21bda839be67
+Removing intermediate container 21bda839be67
+ ---> 199dab6b8c39
+Step 10/14 : RUN chmod +x main
+ ---> Running in 50f5435b65e3
+Removing intermediate container 50f5435b65e3
+ ---> ad82e31c73a1
+
+Step 11/14 : FROM scratch
+ --->
+Step 12/14 : COPY --from=builder /build/main /
+ ---> Using cache
+ ---> 5bb82c16e623
+Step 13/14 : EXPOSE 8081
+ ---> Using cache
+ ---> e328b0483fe3
+Step 14/14 : ENTRYPOINT ["/main"]
+ ---> Using cache
+ ---> e457f8624483
+
+Successfully built e457f8624483
+Successfully tagged deployments_calendar_sender:latest
+Creating deployments_queue_1 ... done
+Creating deployments_db_1    ... done
+Creating deployments_calendar_sender_1    ... done
+Creating deployments_calendar_1           ... done
+Creating deployments_calendar_scheduler_1 ... done
+ginkgo ./tests
+Running Suite: Tests Suite
+==========================
+Random Seed: 1600023487
+Will run 8 of 8 specs
+
+• [SLOW TEST:10.019 seconds]
+Sender
+/Users/gremlin/education/otus/golang/otus-go/otus-golang-hw/hw12_13_14_15_calendar/tests/sender_test.go:12
+  Event
+  /Users/gremlin/education/otus/golang/otus-go/otus-golang-hw/hw12_13_14_15_calendar/tests/sender_test.go:13
+    should receive event
+    /Users/gremlin/education/otus/golang/otus-go/otus-golang-hw/hw12_13_14_15_calendar/tests/sender_test.go:14
+------------------------------
+•••••••
+Ran 8 of 8 Specs in 10.213 seconds
+SUCCESS! -- 8 Passed | 0 Failed | 0 Pending | 0 Skipped
+PASS
+
+Ginkgo ran 1 suite in 11.684557533s
+Test Suite Passed
+docker-compose -f deployments/docker-compose.yml down
+Stopping deployments_calendar_scheduler_1 ... done
+Stopping deployments_calendar_1           ... done
+Stopping deployments_calendar_sender_1    ... done
+Stopping deployments_queue_1              ... done
+Stopping deployments_db_1                 ... done
+Removing deployments_calendar_scheduler_1 ... done
+Removing deployments_calendar_1           ... done
+Removing deployments_calendar_sender_1    ... done
+Removing deployments_queue_1              ... done
+Removing deployments_db_1                 ... done
+Removing network deployments_default

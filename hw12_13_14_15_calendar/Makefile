@@ -23,8 +23,13 @@ migrate:
 
 up:
 	docker-compose -f deployments/docker-compose.yml up -d
-	
+
 down:
+	docker-compose -f deployments/docker-compose.yml down
+
+integration-tests:
+	docker-compose -f deployments/docker-compose.yml up -d --build
+	ginkgo ./tests
 	docker-compose -f deployments/docker-compose.yml down
 
 generate:

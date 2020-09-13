@@ -11,15 +11,16 @@ import (
 )
 
 type App struct {
+	r           repository.Stats
 	c           *queue.Consumer
 	scanTimeout int
 }
 
-func New(c *queue.Consumer, scanTimeout int) *App {
-	return &App{c: c, scanTimeout: scanTimeout}
+func New(r repository.Stats, c *queue.Consumer, scanTimeout int) *App {
+	return &App{c: c, r: r, scanTimeout: scanTimeout}
 }
 
-func processEvents(msg []byte) {
+func (app *App) processEvents(msg []byte) error {
 	var events []repository.Event
 	err := json.Unmarshal(msg, &events)
 	if err != nil {
@@ -28,9 +29,11 @@ func processEvents(msg []byte) {
 		for _, event := range events {
 			fmt.Printf("[SEND] Event %s starts at %s, ends at %s\n", event.Title, event.StartDate.Format(time.RFC3339), event.EndDate.Format(time.RFC3339))
 		}
+		return app.r.MarkEventsAsSent(&events)
 	}
+	return nil
 }
 
 func (app *App) Run() error {
-	return app.c.Handle(processEvents)
+	return app.c.Handle(app.processEvents)
 }

@@ -45,7 +45,7 @@ services:
     volumes:
       - ../migrations:/migrations
     ports:
-      - "8888:8081"
+      - "8888:50052"
     depends_on:
       db:
         condition: service_healthy
