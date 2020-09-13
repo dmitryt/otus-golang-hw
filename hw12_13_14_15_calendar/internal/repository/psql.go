@@ -12,7 +12,6 @@ import (
 
 	// is used for init postgres.
 	_ "github.com/lib/pq"
-	"github.com/pressly/goose"
 	"github.com/rs/zerolog/log"
 )
 
@@ -53,19 +52,6 @@ var (
 	deleteObsoleteEventsQs = fmt.Sprintf(`DELETE FROM events WHERE id IN (%s);`, selectObsoleteEventsQs)
 	deleteObsoleteStatusQs = fmt.Sprintf(`DELETE FROM events_status WHERE event_id IN (%s);`, selectObsoleteEventsQs)
 )
-
-func (r *PSQLRepo) Init(ctx context.Context, url, migrationsDir string) (err error) {
-	err = r.Connect(ctx, url)
-	if err != nil {
-		return err
-	}
-	log.Debug().Msgf("Running migrations from dir %s", migrationsDir)
-	err = goose.Run("up", r.db.DB, migrationsDir)
-	if err != nil {
-		return err
-	}
-	return r.Close()
-}
 
 func (r *PSQLRepo) Connect(ctx context.Context, url string) (err error) {
 	log.Debug().Msgf("Connecting to %s", url)

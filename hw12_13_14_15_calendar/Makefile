@@ -5,7 +5,7 @@ build:
 	go build -o ./bin ./...
 
 test:
-	go test -race ./...
+	go test -race -v `go list ./... | grep -v integration-tests`
 
 lint:
 	golangci-lint run ./...
@@ -19,7 +19,7 @@ run:
 	make build && make launch
 
 migrate:
-	./scripts/migrations.sh
+	goose -dir ./migrations postgres "user=\${DB_USER} password=\${DB_PASSWORD} dbname=\${DB_NAME} sslmode=disable\" up
 
 up:
 	docker-compose -f deployments/docker-compose.yml up -d
@@ -29,7 +29,7 @@ down:
 
 integration-tests:
 	docker-compose -f deployments/docker-compose.yml up -d --build
-	ginkgo ./tests
+	ginkgo ./integration-tests
 	docker-compose -f deployments/docker-compose.yml down
 
 generate:
