@@ -62,7 +62,7 @@ func (c *Consumer) Reconnect() (deliveries <-chan amqp.Delivery, err error) {
 	return
 }
 
-func (c *Consumer) Handle(fn func([]byte)) error {
+func (c *Consumer) Handle(fn func([]byte) error) error {
 	if err := c.Connect(); err != nil {
 		return err
 	}
@@ -74,7 +74,10 @@ func (c *Consumer) Handle(fn func([]byte)) error {
 		select {
 		case msg := <-deliveries:
 			log.Debug().Msgf("Receiving events from queue: %+v", msg.Body)
-			fn(msg.Body)
+			err := fn(msg.Body)
+			if err != nil {
+				log.Error().Msgf("Processing event: %s", err)
+			}
 		case <-c.connector.errCh:
 			deliveries, err = c.Reconnect()
 			if err != nil {

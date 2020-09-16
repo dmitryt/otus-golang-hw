@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
-	"strconv"
 
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	"github.com/dmitryt/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
@@ -49,7 +47,7 @@ func main() {
 	qCfg := cfg.QueueConfig
 
 	producer := queue.NewProducer(
-		fmt.Sprintf("amqp://%s:%s@%s:%s/", qCfg.User, qCfg.Pass, qCfg.Host, strconv.Itoa(qCfg.Port)),
+		qCfg.URI,
 		qCfg.QueueName,
 		qCfg.ExchangeType,
 		qCfg.MaxReconnectAttempts,

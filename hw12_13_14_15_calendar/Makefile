@@ -5,7 +5,7 @@ build:
 	go build -o ./bin ./...
 
 test:
-	go test -race ./...
+	go test -race -v `go list ./... | grep -v integration-tests`
 
 lint:
 	golangci-lint run ./...
@@ -18,8 +18,16 @@ launch:
 run:
 	make build && make launch
 
-migrate:
-	./scripts/migrations.sh
+up:
+	docker-compose -f deployments/docker-compose.yml up -d
+
+down:
+	docker-compose -f deployments/docker-compose.yml down
+
+integration-tests:
+	docker-compose -f deployments/docker-compose.yml -f deployments/docker-compose.test.yml up -d --build && \
+	API_HOST=http://localhost:8888 ginkgo ./integration-tests && \
+	docker-compose -f deployments/docker-compose.yml -f deployments/docker-compose.test.yml down
 
 generate:
 	protoc \
@@ -29,4 +37,4 @@ generate:
 	--grpc-gateway_out=logtostderr=true:${cdir}/service/server \
 	${cdir}/service/schema/calendar.proto
 
-.PHONY: build
+.PHONY: build integration-tests
